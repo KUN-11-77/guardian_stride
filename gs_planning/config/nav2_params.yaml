@@ -1,0 +1,226 @@
+# gs_planning/config/nav2_params.yaml
+# Nav2 全局/局部规划器配置
+
+amcl:
+  ros__parameters:
+    use_sim_time: False
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+    base_frame_id: "base_footprint"
+    beam_skip_distance: 0.5
+    beam_skip_error_threshold: 0.9
+    beam_skip_threshold: 0.3
+    do_beam_skip: True
+    global_frame_id: "map"
+    lambda_short: 0.1
+    laser_likelihood_max_dist: 2.0
+    laser_max_range: 100.0
+    laser_min_range: -1.0
+    laser_model_type: "likelihood_field"
+    max_beams: 60
+    max_particles: 2000
+    min_particles: 500
+    odom_frame_id: "odom"
+    pf_err: 0.05
+    pf_z: 0.05
+    resample_interval: 1
+    robot_model_type: "differential_mobile"
+    sensor_model_type: "likelihood_field"
+    transform_tolerance: 1.0
+    update_min_a: 0.2
+    update_min_d: 0.25
+    z_hit: 0.5
+    z_max: 0.65
+    z_rand: 0.25
+    z_short: 0.05
+
+amcl_map_client:
+  ros__parameters:
+    use_sim_time: False
+
+amcl_rclcpp_node:
+  ros__parameters:
+    use_sim_time: False
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: False
+    global_frame: "map"
+    robot_base_frame: "base_footprint"
+    odom_topic: "/odom"
+    default_bt_xml_filename: "navigate_w_replanning_and_recovery.xml"
+    plugin_lib_names:
+      - nav2_compute_path_to_pose_action_bt_node
+      - nav2_follow_path_action_bt_node
+      - nav2_back_up_action_bt_node
+      - nav2_spin_action_bt_node
+      - nav2_wait_action_bt_node
+      - nav2_clear_costmap_service_bt_node
+      - nav2_is_stuck_condition_bt_node
+      - nav2_goal_reached_condition_bt_node
+      - nav2_initial_pose_received_condition_bt_node
+      - nav2_reinitialize_global_localization_service_bt_node
+      - nav2_rate_controller_bt_node
+      - nav2_distance_controller_bt_node
+      - nav2_recovery_node_bt_node
+      - nav2_pipeline_sequence_bt_node
+      - nav2_round_robin_node_bt_node
+
+bt_navigator_rclcpp_node:
+  ros__parameters:
+    use_sim_time: False
+
+controller_server:
+  ros__parameters:
+    use_sim_time: False
+    controller_frequency: 5.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.3
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugin: "goal_checker"
+    controller_plugins: ["FollowPath"]
+
+    progress_checker:
+      plugin: "nav2_controller::ProgressChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+      stateful: True
+
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: True
+      min_vel_x: 0.0
+      min_vel_y: 0.0
+      max_vel_x: 0.5
+      max_vel_y: 0.0
+      max_vel_theta: 1.0
+      min_speed_xy: 0.0
+      max_speed_xy: 0.5
+      min_speed_theta: 0.0
+      accel_lim_x: 2.5
+      accel_lim_y: 0.0
+      accel_lim_theta: 3.2
+      decel_lim_x: -2.5
+      decel_lim_y: 0.0
+      decel_lim_theta: -3.2
+      vx_samples: 20
+      vy_samples: 5
+      vtheta_samples: 20
+      sim_time: 1.5
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      critic_timeout: 0.5
+      debug_trajectory: False
+      publish_trajectory: False
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: "odom"
+      robot_base_frame: "base_footprint"
+      use_sim_time: False
+      rolling_window: True
+      width: 5.0
+      height: 5.0
+      resolution: 0.05
+      plugins:
+        - "semantic_layer"
+
+      semantic_layer:
+        plugin: "guardian_stride/SemanticCostmapPlugin"
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: "map"
+      robot_base_frame: "base_footprint"
+      use_sim_time: False
+      robot_radius: 0.22
+      resolution: 0.05
+      plugins:
+        - "semantic_layer"
+
+      semantic_layer:
+        plugin: "guardian_stride/SemanticCostmapPlugin"
+
+ planner_server:
+  ros__parameters:
+    use_sim_time: False
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_navfn_planner/NavfnPlanner"
+      tolerance: 0.5
+      use_astar: True
+      allow_unknown: True
+
+ smoother_server:
+  ros__parameters:
+    use_sim_time: False
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 100
+      do_refinement: True
+
+ behavior_server:
+  ros__parameters:
+    use_sim_time: False
+    local_frame: "odom"
+    costmap_topic: "local_costmap/costmap_raw"
+    footprint_topic: "local_costmap/published_footprint"
+    cycle_duration: 10.0
+    behavior_plugins:
+      - spin
+      - backup
+      - drive_on_heading
+      - assisted_safe_stop
+
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    assisted_safe_stop:
+      plugin: "nav2_behaviors/AssistedStop"
+
+ velocity_smoother:
+  ros__parameters:
+    use_sim_time: False
+    input_timeout: 0.5
+    feedback: "open_loop"
+    max_velocity: [0.5, 0.0, 1.0]
+    min_velocity: [0.0, 0.0, 0.0]
+    max_accel: [2.5, 0.0, 3.2]
+    max_decel: [-2.5, 0.0, -3.2]
+
+ lifecycle_manager:
+  ros__parameters:
+    use_sim_time: False
+    autostart: True
+    node_names:
+      - controller_server
+      - planner_server
+      - behavior_server
+      - smoother_server
+      - velocity_smoother
+
+ map_server:
+  ros__parameters:
+    use_sim_time: False
+    yaml_filename: ""

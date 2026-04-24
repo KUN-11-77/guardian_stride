@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gs_planning</name>
+  <version>1.0.0</version>
+  <description>M4 认知决策模块：Nav2 导航规划 + 引导力矩计算 + Intent→Goal 桥接</description>
+  <maintainer email="dev@guardian-stride.com">Guardian Stride Team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>nav2_costmap_2d</depend>
+  <depend>pluginlib</depend>
+  <depend>gs_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>nav2_msgs</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

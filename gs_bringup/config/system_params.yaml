@@ -1,0 +1,73 @@
+# gs_bringup/config/system_params.yaml
+# Guardian Stride 全系统参数配置
+
+system:
+  ros__parameters:
+    # 系统名称
+    system_name: "Guardian Stride"
+    version: "1.0.0"
+
+    # 话题命名空间（可选，用于多机器人场景）
+    namespace: ""
+
+    # 时钟
+    use_sim_time: false
+
+    # 日志级别
+    log_level: "info"
+
+    # DDS 中间件
+    rmw_implementation: "rmw_cyclonedds_cpp"
+
+    # 启动顺序延时（秒）
+    delays:
+      fusion_after_realsense: 2.0
+      perception_after_fusion: 2.0
+      safety_after_perception: 1.0
+      exo_after_safety: 1.0
+      planning_after_exo: 1.0
+      voice_after_planning: 1.0
+
+hardware:
+  ros__parameters:
+    # DK-2500 平台配置
+    platform: "DK-2500"
+    cpu_cores:
+      p_cores: [0]       # P-Core 用于实时控制
+      e_cores: [1,2,3]   # E-Core 用于通用计算
+
+    # RealSense D435i
+    realsense:
+      enable_gyro: true
+      enable_accel: true
+      unite_imu_method: 1
+      depth_fps: 30
+      color_fps: 30
+
+    # VESC 电机
+    vesc:
+      uart_port: "/dev/ttyUSB0"
+      uart_baudrate: 115200
+
+    # BNO055 IMU
+    imu:
+      i2c_bus: 1
+      i2c_address: 0x28
+
+    # ToF 阵列
+    tof:
+      i2c_bus: 0
+      i2c_address: 0x29
+
+safety:
+  ros__parameters:
+    # 安全 FSM 参数
+    tof_slow_down_m: 2.0
+    tof_virtual_wall_m: 0.5
+    imu_fall_pitch_deg: 30.0
+    imu_fall_roll_deg: 30.0
+    heartbeat_timeout_ms: 200.0
+
+    # 频率约束
+    safety_fsm_hz: 50
+    control_loop_hz: 1000

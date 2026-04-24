@@ -8,16 +8,17 @@
 
 #include <cmath>
 #include <cstring>
+#include <chrono>
 
 class OccupancyBridge : public rclcpp::Node {
 public:
     OccupancyBridge() : Node("occupancy_bridge"), tf_buffer_(this->get_clock()) {
         this->declare_parameter("map_frame", "map");
         this->declare_parameter("robot_frame", "base_link");
-        this->declare_parameter("grid_resolution", 0.05);  // 5cm
-        this->declare_parameter("grid_width", 100);      // 5m
+        this->declare_parameter("grid_resolution", 0.05);
+        this->declare_parameter("grid_width", 100);
         this->declare_parameter("grid_height", 100);
-        this->declare_parameter("obstacle_threshold", 0.4);  // 障碍物膨胀半径
+        this->declare_parameter("obstacle_threshold", 0.4);
 
         map_frame_ = this->get_parameter("map_frame").as_string();
         robot_frame_ = this->get_parameter("robot_frame").as_string();
@@ -26,28 +27,22 @@ public:
         grid_height_ = this->get_parameter("grid_height").as_int();
         obstacle_threshold_ = this->get_parameter("obstacle_threshold").as_double();
 
-        // 创建 TF 监听器
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(tf_buffer_);
 
-        // 订阅 VIO 点云
         cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
             "/vins_fusion/point_cloud",
             10,
             std::bind(&OccupancyBridge::cloudCallback, this, std::placeholders::_1)
         );
 
-        // 发布 OccupancyGrid
         grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/occupancy_grid", 10);
 
-        // 定时器 - 5Hz 更新
         timer_ = this->create_wall_timer(
-            200ms,
+            std::chrono::milliseconds(200),
             std::bind(&OccupancyBridge::timerCallback, this)
         );
 
-        // 初始化网格
         initGrid();
-
         RCLCPP_INFO(this->get_logger(), "Occupancy bridge started");
     }
 
@@ -59,12 +54,10 @@ private:
         grid_.info.height = grid_height_;
         grid_.info.origin.position.x = -grid_width_ * resolution_ / 2.0;
         grid_.info.origin.position.y = -grid_height_ * resolution_ / 2.0;
-
-        grid_.data.resize(grid_width_ * grid_height_, -1);  // -1 = 未知
+        grid_.data.resize(grid_width_ * grid_height_, -1);
     }
 
     void cloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-        // 获取机器人当前位置
         geometry_msgs::msg::TransformStamped transform;
         try {
             transform = tf_buffer_.lookupTransform(
@@ -74,14 +67,11 @@ private:
                 "TF lookup failed: %s", ex.what());
             return;
         }
-
-        // 将点云转换到网格坐标
         processCloud(msg, transform);
     }
 
     void processCloud(const sensor_msgs::msg::PointCloud2::SharedPtr cloud,
                       const geometry_msgs::msg::TransformStamped& transform) {
-        // 重置网格（-1 未知）
         std::fill(grid_.data.begin(), grid_.data.end(), -1);
 
         const float ox = transform.transform.translation.x;
@@ -95,30 +85,27 @@ private:
         int offset_y = cloud->fields[1].offset;
         int offset_z = cloud->fields[2].offset;
 
+        int inflation_radius = static_cast<int>(obstacle_threshold_ / resolution_);
+
         for (int i = 0; i < num_points; i++) {
             float px = *reinterpret_cast<const float*>(data + i * step_x + offset_x);
             float py = *reinterpret_cast<const float*>(data + i * step_x + offset_y);
             float pz = *reinterpret_cast<const float*>(data + i * step_x + offset_z);
 
-            // 转换到机器人局部坐标系
             float local_x = px - ox;
             float local_y = py - oy;
 
-            // 转换到网格坐标
             int gx = static_cast<int>((local_x - grid_.info.origin.position.x) / resolution_);
             int gy = static_cast<int>((local_y - grid_.info.origin.position.y) / resolution_);
 
-                        // 标记为障碍物（膨胀处理）
-            int膨胀半径 = static_cast<int>(obstacle_threshold_ / resolution_);处理）
-            int膨胀半径 = static_cast<int>(obstacle_threshold_ / resolution_);
-            for (int dx = -膨胀半径; dx <= 膨胀半径; dx++) {
-                for (int dy = -膨胀半径; dy <= 膨胀半径; dy++) {
+            for (int dx = -inflation_radius; dx <= inflation_radius; dx++) {
+                for (int dy = -inflation_radius; dy <= inflation_radius; dy++) {
                     int nx = gx + dx;
                     int ny = gy + dy;
                     if (nx >= 0 && nx < grid_width_ && ny >= 0 && ny < grid_height_) {
                         int idx = ny * grid_width_ + nx;
                         if (grid_.data[idx] < 100) {
-                            grid_.data[idx] = 100;  // 占据
+                            grid_.data[idx] = 100;
                         }
                     }
                 }

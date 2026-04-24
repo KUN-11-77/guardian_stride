@@ -1,0 +1,19 @@
+# gs_voice/config/voice_params.yaml
+# 语音交互模块参数
+
+voice_node:
+  ros__parameters:
+    # 唤醒词
+    wake_word: "小助手"
+
+    # ASR 模型路径
+    asr_model_path: "/home/user/ros2_ws/src/guardian_stride/gs_voice/models/whisper-tiny-openvino"
+
+    # TTS 设置
+    enable_tts: true
+    tts_engine: "espeak-ng"
+
+    # 话题配置
+    audio_topic: "/audio/audio_chunk"
+    intent_topic: "/intent"
+    tts_priority_topic: "/tts_priority"

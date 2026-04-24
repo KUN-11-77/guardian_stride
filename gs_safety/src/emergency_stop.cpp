@@ -39,7 +39,10 @@ void EmergencyStop::estopCallback(const std_msgs::msg::Bool::SharedPtr msg) {
 
 void EmergencyStop::publishEStop(bool stop) {
     gs_msgs::msg::SafetyCmd cmd;
-    cmd.stiffness_mode = stop ? "LOCK" : "FREE";
+    cmd.brake = stop;
+    cmd.state = stop ? "HIGH_DAMP_SAFE" : "NORMAL";
+    cmd.damp_level = stop ? 1.0f : 0.0f;
+    cmd.alert_text = stop ? "EMERGENCY STOP" : "";
     cmd_pub_->publish(cmd);
 
     RCLCPP_WARN(this->get_logger(), "Emergency stop %s", stop ? "TRIGGERED" : "CLEARED");

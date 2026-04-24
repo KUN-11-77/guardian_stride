@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<library path="lib/libsemantic_costmap_plugin">
+  <class name="guardian_stride/SemanticCostmapPlugin" type="guardian_stride::SemanticCostmapPlugin" base_class_type="nav2_costmap_2d::Layer">
+    <description>Nav2 代价图语义插件：将 SegFormer 语义分割结果映射为 Nav2 代价地图层</description>
+  </class>
+</library>

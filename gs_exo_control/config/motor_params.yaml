@@ -1,0 +1,22 @@
+# gs_exo_control/config/motor_params.yaml
+# 电机标定 / 导纳控制参数
+
+exo_controller_node:
+  ros__parameters:
+    # 导纳控制参数
+    kp_guide: 2.5      # 引导增益（摆动相牵引）
+    kd_guide: 0.8      # 阻尼增益（摆动相）
+    kd_damp: 1.5       # 被动阻尼（支撑相）
+
+    # 力矩限制
+    max_torque_nm: 3.0  # 最大输出力矩（软件限幅）
+
+    # VESC 通信参数
+    vesc_uart_port: "/dev/ttyUSB0"
+    vesc_uart_baudrate: 115200
+
+    # 步态检测参数
+    stance_threshold: 0.5  # Z轴加速度阈值判断支撑相
+
+    # 心跳超时（毫秒）
+    heartbeat_timeout_ms: 200

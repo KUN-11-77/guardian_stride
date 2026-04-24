@@ -1,0 +1,19 @@
+# gs_planning/config/guidance_params.yaml
+# 引导力矩参数配置
+
+guidance_torque_node:
+  ros__parameters:
+    # 引导增益参数
+    kp_guide: 2.5     # 引导增益（牵引）
+    kd_guide: 0.8     # 阻尼增益
+
+    # 力矩限制
+    max_torque_nm: 3.0  # 最大输出力矩（软件限幅）
+
+    # 话题配置
+    state_topic: "/state"
+    path_topic: "/plan"
+    safety_cmd_topic: "/safety_cmd"
+
+    # 安全阈值
+    min_safe_torque_nm: 0.1  # 最小安全力矩
