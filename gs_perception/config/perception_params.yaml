@@ -1,0 +1,23 @@
+segformer_node:
+  ros__parameters:
+    model_xml_path: "/home/user/ros2_ws/src/guardian_stride/gs_perception/models/segformer_b0_int8.xml"
+    inference_device: "GPU"
+    input_image_topic: "/camera/color/image_raw"
+    output_semantic_map_topic: "/semantic_map"
+    output_traversability_topic: "/traversability"
+    output_obstacle_dist_topic: "/nearest_obstacle_m"
+    output_path_center_topic: "/tactile_path_center"
+    enable_visualization: true
+    visualization_window_name: "Guardian Stride - Perception"
+    overlay_alpha: 0.55
+    obstacle_warn_dist_m: 2.0
+    obstacle_stop_dist_m: 0.5
+    cityscapes_to_semantic:
+      0: 0
+      1: 0
+      2: 3
+      3: 3
+      4: 3
+      11: 4
+      12: 4
+      13: 4

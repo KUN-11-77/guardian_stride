@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gs_perception</name>
+  <version>1.0.0</version>
+  <description>M1 视觉感知模块：SegFormer-B0 语义分割 + OpenVINO 推理</description>
+
+  <maintainer email="dev@guardian-stride.com">Guardian Stride Team</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav2_costmap_2d</depend>
+  <depend>cv_bridge</depend>
+  <depend>gs_msgs</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

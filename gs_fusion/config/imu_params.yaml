@@ -1,0 +1,21 @@
+# BNO055 IMU 标定参数
+# I2C1: SDA=GPIO1, SCL=GPIO2
+imu_node:
+  ros__parameters:
+    i2c_bus: 1
+    i2c_address: 0x28
+
+    # 帧 ID
+    frame_id: "imu_link"
+
+    # 采样频率
+    sampling_rate_hz: 1000
+
+    # BNO055 运行模式
+    # 9-DOF: 0x0B, 7-DOF: 0x08
+    operation_mode: 0x0B
+
+    # 标定状态阈值（低于此值警告）
+    mag_calib_threshold: 2.0
+    accel_calib_threshold: 2.0
+    gyro_calib_threshold: 2.0
