@@ -33,7 +33,6 @@ public:
     get_parameter("max_torque_nm", params_.max_torque_nm);
 
     admittance_controller_ = std::make_unique<AdmittanceController>(params_);
-    vesc_interface_ = std::make_unique<VescInterface>(shared_from_this());
 
     rclcpp::QoS qos(1);
     qos.reliable();
@@ -70,6 +69,14 @@ public:
         });
 
     motor_cmd_pub_ = create_publisher<gs_msgs::msg::MotorCmd>("/motor_cmd", qos);
+
+    // 延迟初始化 VESC（不能在构造函数调 shared_from_this）
+    init_timer_ = create_wall_timer(std::chrono::milliseconds(0),
+        [this]() {
+          init_timer_->cancel();
+          vesc_interface_ = std::make_unique<VescInterface>(
+              std::shared_ptr<rclcpp::Node>(this, [](rclcpp::Node*){}));
+        });
 
     if (!setupRealtime()) {
       RCLCPP_WARN(get_logger(), "实时性设置失败，继续运行");
@@ -224,6 +231,7 @@ private:
   rclcpp::Publisher<gs_msgs::msg::MotorCmd>::SharedPtr motor_cmd_pub_;
 
   rclcpp::TimerBase::SharedPtr heartbeat_timer_;
+  rclcpp::TimerBase::SharedPtr init_timer_;
 
   std::unique_ptr<AdmittanceController> admittance_controller_;
   std::unique_ptr<VescInterface> vesc_interface_;

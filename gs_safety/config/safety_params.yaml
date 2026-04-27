@@ -1,0 +1,25 @@
+# gs_safety/config/safety_params.yaml
+# M5 安全反射层参数配置
+safety_fsm_node:
+  ros__parameters:
+    # ToF 距离阈值
+    tof_slow_down_m: 2.0      # < 2m → SLOW_DOWN 状态
+    tof_virtual_wall_m: 0.5   # < 0.5m → VIRTUAL_WALL 状态
+
+    # IMU 姿态突变阈值（跌倒保护）
+    imu_fall_pitch_deg: 30.0  # pitch 突变超过 30° → FALL_PROTECT
+    imu_fall_roll_deg: 30.0   # roll 突变超过 30° → FALL_PROTECT
+
+    # 心跳超时
+    heartbeat_timeout_ms: 200.0  # 200ms 无心跳 → HIGH_DAMP_SAFE
+
+    # 控制输出
+    safety_check_hz: 50       # 安全检测频率 50Hz
+
+    # 话题名
+    tof_topic: "/tof/distances"
+    imu_topic: "/imu/data"
+    state_topic: "/state"
+    guidance_torque_topic: "/guidance_torque"
+    safety_cmd_topic: "/safety_cmd"
+    heartbeat_topic: "/motor_cmd"

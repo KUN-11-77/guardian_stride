@@ -1,69 +1,118 @@
+// gs_perception/src/costmap_bridge.cpp
+// 语义图 → Nav2 代价图桥接
+// 订阅 SegFormer 语义分割结果，发布为 Nav2 OccupancyGrid
+
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/u_int8_multi_array.hpp>
-#include <std_msgs/msg/float32_multi_array.hpp>
-#include <opencv2/opencv.hpp>
+#include <gs_msgs/msg/semantic_map.hpp>
+#include <gs_msgs/msg/traversability.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <memory>
+#include <mutex>
 
 class CostmapBridge : public rclcpp::Node {
 public:
-    CostmapBridge() : Node("costmap_bridge") {
-        this->declare_parameter("semantic_map_topic", "/semantic_map");
-        this->declare_parameter("traversability_topic", "/traversability");
+  CostmapBridge()
+    : Node("costmap_bridge"),
+      resolution_(0.05), width_(100), height_(100) {
+    declare_parameter("resolution", 0.05);
+    declare_parameter("width", 100);
+    declare_parameter("height", 100);
+    declare_parameter("frame_id", "map");
 
-        semantic_sub_ = this->create_subscription<std_msgs::msg::UInt8MultiArray>(
-            this->get_parameter("semantic_map_topic").as_string(), 10,
-            std::bind(&CostmapBridge::semanticCallback, this, std::placeholders::_1));
+    get_parameter("resolution", resolution_);
+    get_parameter("width", width_);
+    get_parameter("height", height_);
+    frame_id_ = get_parameter("frame_id").as_string();
 
-        traversability_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-            this->get_parameter("traversability_topic").as_string(), 10,
-            std::bind(&CostmapBridge::traversabilityCallback, this, std::placeholders::_1));
+    semantic_sub_ = create_subscription<gs_msgs::msg::SemanticMap>(
+        "/semantic_map", 10,
+        [this](const gs_msgs::msg::SemanticMap::SharedPtr msg) {
+          std::lock_guard<std::mutex> lock(mutex_);
+          latest_semantic_ = msg;
+        });
 
-        RCLCPP_INFO(this->get_logger(), "Costmap bridge started");
-    }
+    traversability_sub_ = create_subscription<gs_msgs::msg::Traversability>(
+        "/traversability", 10,
+        [this](const gs_msgs::msg::Traversability::SharedPtr msg) {
+          std::lock_guard<std::mutex> lock(mutex_);
+          latest_traversability_ = msg;
+        });
+
+    costmap_pub_ = create_publisher<nav_msgs::msg::OccupancyGrid>("/costmap", 10);
+
+    timer_ = create_wall_timer(std::chrono::milliseconds(200),
+        [this]() { publishCostmap(); });
+
+    RCLCPP_INFO(get_logger(), "Costmap bridge 已启动 (5Hz)");
+  }
 
 private:
-    void semanticCallback(const std_msgs::msg::UInt8MultiArray::SharedPtr msg) {
-        if (msg->data.empty()) return;
+  void publishCostmap() {
+    std::lock_guard<std::mutex> lock(mutex_);
 
-        int height = static_cast<int>(msg->layout.dim[0].size);
-        int width = static_cast<int>(msg->layout.dim[1].size);
+    nav_msgs::msg::OccupancyGrid grid;
+    grid.header.stamp = now();
+    grid.header.frame_id = frame_id_;
+    grid.info.resolution = resolution_;
+    grid.info.width = width_;
+    grid.info.height = height_;
+    grid.info.origin.position.x = -width_ * resolution_ / 2.0;
+    grid.info.origin.position.y = -height_ * resolution_ / 2.0;
+    grid.info.origin.orientation.w = 1.0;
+    grid.data.resize(width_ * height_, -1);
 
-        cv::Mat semantic_map(height, width, CV_8UC1, const_cast<uint8_t*>(msg->data.data()));
-
-        cv::Mat costmap(height, width, CV_8UC1);
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                uint8_t class_id = semantic_map.at<uint8_t>(i, j);
-                uint8_t cost = 0;
-
-                switch (class_id) {
-                    case 0: cost = 0; break;
-                    case 1: cost = 50; break;
-                    case 2: cost = 254; break;
-                    case 3: cost = 254; break;
-                    case 4: cost = 254; break;
-                    case 5: cost = 128; break;
-                    default: cost = 255; break;
-                }
-
-                costmap.at<uint8_t>(i, j) = cost;
-            }
+    if (latest_traversability_) {
+      auto& trav = *latest_traversability_;
+      for (uint32_t j = 0; j < std::min(trav.height, height_); j++) {
+        for (uint32_t i = 0; i < std::min(trav.width, width_); i++) {
+          uint32_t idx = j * trav.width + i;
+          if (idx >= trav.data.size()) continue;
+          float val = trav.data[idx];
+          int cell = static_cast<int>(grid.info.width * (j * height_ / trav.height) +
+                                      (i * width_ / trav.width));
+          if (cell < static_cast<int>(grid.data.size())) {
+            grid.data[cell] = (val < 0.3f) ? 100 : (val > 0.7f ? 0 : 50);
+          }
         }
-
-        RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-            "Published costmap %dx%d", width, height);
+      }
+    } else if (latest_semantic_) {
+      auto& sem = *latest_semantic_;
+      for (uint32_t j = 0; j < std::min(sem.height, height_); j++) {
+        for (uint32_t i = 0; i < std::min(sem.width, width_); i++) {
+          uint32_t idx = j * sem.width + i;
+          if (idx >= sem.data.size()) continue;
+          uint8_t cls = sem.data[idx];
+          int cell = static_cast<int>(grid.info.width * (j * height_ / sem.height) +
+                                      (i * width_ / sem.width));
+          if (cell < static_cast<int>(grid.data.size())) {
+            grid.data[cell] = (cls == 0 || cls == 1) ? 0 :
+                              (cls == 5) ? 50 : 100;
+          }
+        }
+      }
     }
 
-    void traversabilityCallback(const std_msgs::msg::Float32MultiArray::SharedPtr /*msg*/) {
-    }
+    costmap_pub_->publish(grid);
+  }
 
-    rclcpp::Subscription<std_msgs::msg::UInt8MultiArray>::SharedPtr semantic_sub_;
-    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr traversability_sub_;
+  rclcpp::Subscription<gs_msgs::msg::SemanticMap>::SharedPtr semantic_sub_;
+  rclcpp::Subscription<gs_msgs::msg::Traversability>::SharedPtr traversability_sub_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_pub_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  std::mutex mutex_;
+
+  gs_msgs::msg::SemanticMap::SharedPtr latest_semantic_;
+  gs_msgs::msg::Traversability::SharedPtr latest_traversability_;
+
+  double resolution_;
+  uint32_t width_;
+  uint32_t height_;
+  std::string frame_id_;
 };
 
 int main(int argc, char** argv) {
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<CostmapBridge>();
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-    return 0;
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<CostmapBridge>());
+  rclcpp::shutdown();
+  return 0;
 }

@@ -1,19 +1,12 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
-    perception_dir = os.path.join(os.path.dirname(__file__), '..')
-
+    percep_dir = get_package_share_directory('gs_perception')
     return LaunchDescription([
-        Node(
-            package='gs_perception',
-            executable='segformer_node',
-            name='segformer_node',
-            output='screen',
-            parameters=[os.path.join(perception_dir, 'config', 'perception_params.yaml')],
-            extra_env={
-                'OPENVINO_DEVICE': 'GPU',
-            }
-        )
+        Node(package='gs_perception', executable='segformer_node', name='segformer_node',
+             parameters=[os.path.join(percep_dir, 'config', 'perception_params.yaml')]),
+        Node(package='gs_perception', executable='costmap_bridge', name='costmap_bridge'),
     ])

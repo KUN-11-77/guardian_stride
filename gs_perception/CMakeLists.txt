@@ -21,6 +21,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 # 使用 pkg-config 查找 OpenCV（跨平台）
 find_package(PkgConfig QUIET)
@@ -79,7 +80,7 @@ endif()
 add_executable(costmap_bridge src/costmap_bridge.cpp)
 
 ament_target_dependencies(costmap_bridge
-  rclcpp std_msgs cv_bridge
+  rclcpp std_msgs cv_bridge nav_msgs gs_msgs
 )
 
 target_link_libraries(costmap_bridge ${OPENCV_LIBS})

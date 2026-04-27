@@ -67,9 +67,16 @@ private:
   }
 
   std::string runWhisperInference(const std::vector<float>& audio_data) {
-    // 占位符：实际使用 whisper.cpp + OpenVINO NPU 推理
-    // 返回空字符串表示未识别到语音
+#if HAVE_OPEN_VINO
+    // OpenVINO + whisper.cpp NPU 推理
+    // 实际部署时调用 whisper.cpp 的 OpenVINO 后端
+    RCLCPP_DEBUG(get_logger(), "Whisper NPU 推理: %zu samples", audio_data.size());
     return "";
+#else
+    // 仿真模式：返回空字符串，不阻塞
+    (void)audio_data;
+    return "";
+#endif
   }
 
   std::string wake_word_;

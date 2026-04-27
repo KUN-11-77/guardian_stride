@@ -1,3 +1,4 @@
+# gs_perception/config/perception_params.yaml
 segformer_node:
   ros__parameters:
     model_xml_path: "/home/user/ros2_ws/src/guardian_stride/gs_perception/models/segformer_b0_int8.xml"
@@ -12,12 +13,3 @@ segformer_node:
     overlay_alpha: 0.55
     obstacle_warn_dist_m: 2.0
     obstacle_stop_dist_m: 0.5
-    cityscapes_to_semantic:
-      0: 0
-      1: 0
-      2: 3
-      3: 3
-      4: 3
-      11: 4
-      12: 4
-      13: 4

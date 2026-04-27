@@ -51,14 +51,18 @@ void TTSManager::processQueue() {
   RCLCPP_INFO(node_->get_logger(), "TTS: %s", item.text.c_str());
 
   std::string cmd = "espeak-ng \"" + item.text + "\" 2>/dev/null &";
-  (void)system(cmd.c_str());
+  if (system(cmd.c_str()) == -1) {
+    RCLCPP_WARN(node_->get_logger(), "TTS 播放命令执行失败");
+  }
 
   is_speaking_ = true;
   current_priority_ = item.priority;
 }
 
 void TTSManager::stopCurrent() {
-  (void)system("pkill -9 espeak-ng 2>/dev/null");
+  if (system("pkill -9 espeak-ng 2>/dev/null") == -1) {
+    // pkill 返回 -1 表示错误，但也可能没有进程在运行，忽略
+  }
   is_speaking_ = false;
   current_priority_ = 0;
 }

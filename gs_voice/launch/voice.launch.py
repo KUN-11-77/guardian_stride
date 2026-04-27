@@ -1,21 +1,11 @@
-# gs_voice/launch/voice.launch.py
-# 语音交互模块启动文件
-
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
-    voice_params_file = os.path.join(
-        os.path.dirname(__file__), '..', 'config', 'voice_params.yaml'
-    )
-
+    voice_dir = get_package_share_directory('gs_voice')
     return LaunchDescription([
-        Node(
-            package='gs_voice',
-            executable='voice_node',
-            name='voice_node',
-            output='screen',
-            parameters=[voice_params_file],
-        ),
+        Node(package='gs_voice', executable='voice_node', name='voice_node',
+             parameters=[os.path.join(voice_dir, 'config', 'voice_params.yaml')]),
     ])

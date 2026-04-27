@@ -5,6 +5,8 @@
 #include <std_msgs/msg/float32.hpp>
 #include <geometry_msgs/msg/point.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <gs_msgs/msg/semantic_map.hpp>
+#include <gs_msgs/msg/traversability.hpp>
 
 #include <openvino/openvino.hpp>
 #include <opencv2/opencv.hpp>
@@ -42,9 +44,9 @@ public:
             std::bind(&SegFormerNode::imageCallback, this, std::placeholders::_1)
         );
 
-        semantic_map_pub_ = this->create_publisher<std_msgs::msg::UInt8MultiArray>(
+        semantic_map_pub_ = this->create_publisher<gs_msgs::msg::SemanticMap>(
             this->get_parameter("output_semantic_map_topic").as_string(), 10);
-        traversability_pub_ = this->create_publisher<std_msgs::msg::Float32MultiArray>(
+        traversability_pub_ = this->create_publisher<gs_msgs::msg::Traversability>(
             this->get_parameter("output_traversability_topic").as_string(), 10);
         obstacle_dist_pub_ = this->create_publisher<std_msgs::msg::Float32>(
             this->get_parameter("output_obstacle_dist_topic").as_string(), 10);
@@ -122,31 +124,19 @@ private:
 
     void publishResults(const cv::Mat& semantic_mask, rclcpp::Time stamp) {
         {
-            std_msgs::msg::UInt8MultiArray msg;
-            std_msgs::msg::MultiArrayDimension dim;
-            dim.label = "height";
-            dim.size = static_cast<uint32_t>(semantic_mask.rows);
-            dim.stride = static_cast<uint32_t>(semantic_mask.rows * semantic_mask.cols);
-            msg.layout.dim.push_back(dim);
-            dim.label = "width";
-            dim.size = static_cast<uint32_t>(semantic_mask.cols);
-            dim.stride = static_cast<uint32_t>(semantic_mask.cols);
-            msg.layout.dim.push_back(dim);
+            gs_msgs::msg::SemanticMap msg;
+            msg.header.stamp = stamp;
+            msg.height = static_cast<uint32_t>(semantic_mask.rows);
+            msg.width = static_cast<uint32_t>(semantic_mask.cols);
             msg.data.assign(semantic_mask.datastart, semantic_mask.dataend);
             semantic_map_pub_->publish(msg);
         }
 
         {
-            std_msgs::msg::Float32MultiArray msg;
-            std_msgs::msg::MultiArrayDimension dim;
-            dim.label = "height";
-            dim.size = static_cast<uint32_t>(traversability_mat_.rows);
-            dim.stride = static_cast<uint32_t>(traversability_mat_.rows * traversability_mat_.cols);
-            msg.layout.dim.push_back(dim);
-            dim.label = "width";
-            dim.size = static_cast<uint32_t>(traversability_mat_.cols);
-            dim.stride = static_cast<uint32_t>(traversability_mat_.cols);
-            msg.layout.dim.push_back(dim);
+            gs_msgs::msg::Traversability msg;
+            msg.header.stamp = stamp;
+            msg.height = static_cast<uint32_t>(traversability_mat_.rows);
+            msg.width = static_cast<uint32_t>(traversability_mat_.cols);
             msg.data.assign(traversability_mat_.begin<float>(), traversability_mat_.end<float>());
             traversability_pub_->publish(msg);
         }
@@ -177,8 +167,8 @@ private:
     }
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
-    rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr semantic_map_pub_;
-    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr traversability_pub_;
+    rclcpp::Publisher<gs_msgs::msg::SemanticMap>::SharedPtr semantic_map_pub_;
+    rclcpp::Publisher<gs_msgs::msg::Traversability>::SharedPtr traversability_pub_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr obstacle_dist_pub_;
     rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr path_center_pub_;
 
