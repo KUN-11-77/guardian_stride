@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Guardian Stride Platform</title>
+<style>
+:root {
+  --bg:#060812; --card:#0d1020; --card2:#111430;
+  --border:rgba(80,160,255,0.1); --accent:#38bdf8; --accent2:#a78bfa;
+  --green:#34d399; --warn:#fbbf24; --red:#f87171; --text:#cbd5e1; --dim:#64748b;
+  --radius:10px; --nav-w:200px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
+/* Nav */
+nav{width:var(--nav-w);min-width:var(--nav-w);background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0}
+nav .logo{padding:12px 20px;font-size:1em;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+nav .sub{font-size:0.55em;color:var(--dim);padding:0 20px;margin-bottom:20px;letter-spacing:1px}
+nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--dim);text-decoration:none;font-size:0.78em;transition:.2s;border-left:2px solid transparent}
+nav a:hover,nav a.active{color:var(--text);background:rgba(56,189,248,0.04);border-left-color:var(--accent)}
+nav a .ico{font-size:1.1em;width:20px;text-align:center}
+nav .status{padding:20px;margin-top:auto;font-size:0.6em;color:var(--dim);border-top:1px solid var(--border)}
+nav .status .dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px}
+/* Main */
+main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+header{padding:14px 24px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px}
+header h1{font-size:1em;font-weight:600}
+header .badge{font-size:0.6em;padding:3px 10px;border-radius:10px;background:rgba(52,211,153,0.1);color:var(--green)}
+.content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card-h{padding:10px 16px;font-size:0.7em;font-weight:600;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:8px}
+.card-b{padding:12px}
+/* Page visibility */
+.page{display:none;flex:1;flex-direction:column;gap:12px}
+.page.active{display:flex}
+/* Grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+.g13{display:grid;grid-template-columns:1fr 3fr;gap:12px}
+/* Stream */
+.stream{width:100%;aspect-ratio:4/3;object-fit:contain;background:#000;border-radius:6px}
+/* Status cards */
+.scard{text-align:center;padding:16px;background:var(--card2);border-radius:var(--radius);border:1px solid transparent}
+.scard .sv{font-size:1.6em;font-weight:700}
+.scard .sl{font-size:0.6em;color:var(--dim);margin-top:4px}
+.scard.safe{border-color:rgba(52,211,153,0.3)}.scard.safe .sv{color:var(--green)}
+.scard.warn{border-color:rgba(251,191,36,0.3)}.scard.warn .sv{color:var(--warn)}
+.scard.danger{border-color:rgba(248,113,113,0.3)}.scard.danger .sv{color:var(--red)}
+/* Voice log */
+.vlog{max-height:300px;overflow-y:auto;font-size:0.7em;display:flex;flex-direction:column;gap:4px}
+.m{padding:6px 10px;border-radius:6px;line-height:1.4}
+.m.u{background:rgba(52,211,153,0.06);border-left:3px solid var(--green)}
+.m.b{background:rgba(56,189,248,0.05);border-left:3px solid var(--accent)}
+.m.s{background:rgba(100,116,139,0.04);border-left:3px solid var(--dim);text-align:center;font-size:0.9em}
+.m .mt{font-size:0.65em;color:var(--dim);display:block}
+/* Bars */
+.bar-w{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:6px;overflow:hidden}
+.bar-f{height:100%;border-radius:2px;transition:width .5s}
+.bar-f.cpu{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.bar-f.ram{background:linear-gradient(90deg,var(--green),#22c55e)}
+.bar-f.npu{background:linear-gradient(90deg,#f59e0b,#f97316)}
+/* Mode selector */
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.mode-btn{padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--text);cursor:pointer;font-size:0.7em;transition:.2s}
+.mode-btn:hover,.mode-btn.sel{border-color:var(--accent);background:rgba(56,189,248,0.08)}
+/* Obstacle grid */
+.obs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.ob{text-align:center;padding:10px;border-radius:8px;background:var(--card2)}
+.ob .ov{font-size:1.3em;font-weight:700}.ob .ol{font-size:0.55em;color:var(--dim)}
+.ob.safe .ov{color:var(--green)}.ob.caution .ov{color:var(--warn)}.ob.danger .ov{color:var(--red)}
+/* Table */
+.tbl{width:100%;font-size:0.65em;border-collapse:collapse}
+.tbl th,.tbl td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
+.tbl th{color:var(--dim);font-weight:600}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">🦾 Guardian Stride</div>
+  <div class="sub">DK-2500 · BLIND NAVIGATION</div>
+  <a href="#" class="active" data-page="home"><span class="ico">🏠</span> Home</a>
+  <a href="#" data-page="perception"><span class="ico">👁</span> Perception</a>
+  <a href="#" data-page="navigation"><span class="ico">🗺</span> Navigation</a>
+  <a href="#" data-page="assistant"><span class="ico">🎤</span> Assistant</a>
+  <a href="#" data-page="safety"><span class="ico">🦾</span> Safety</a>
+  <a href="#" data-page="runtime"><span class="ico">💻</span> Runtime</a>
+  <div class="status"><span class="dot"></span> System Online</div>
+</nav>
+
+<main>
+<header>
+  <h1 id="page-title">🏠 Home</h1>
+  <span class="badge" id="mode-badge">● SILENT</span>
+  <span style="margin-left:auto;font-size:0.7em;color:var(--dim)" id="clock">--</span>
+</header>
+
+<div class="content">
+<!-- ===== HOME ===== -->
+<div class="page active" id="page-home">
+  <div class="g2">
+    <div class="card">
+      <div class="card-h">📊 System Status</div>
+      <div class="card-b">
+        <div class="g2" style="margin-bottom:8px">
+          <div class="scard safe" id="sc-risk"><div class="sv">Low</div><div class="sl">Risk Level</div></div>
+          <div class="scard safe" id="sc-mode"><div class="sv">SILENT</div><div class="sl">Current Mode</div></div>
+        </div>
+        <div class="g2">
+          <div class="scard safe"><div class="sv" id="sv-front">--</div><div class="sl">Front (m)</div></div>
+          <div class="scard safe"><div class="sv" id="sv-nearest">--</div><div class="sl">Nearest Obstacle</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">🎯 Mission</div>
+      <div class="card-b" style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:0.7em;color:var(--dim)">Active Task</div>
+        <div style="font-size:1em" id="mission-task">No active mission</div>
+        <div class="g2" style="margin-top:8px">
+          <div style="font-size:0.65em;color:var(--dim)">Obstacles: <span id="mission-obs" style="color:var(--text)">0</span></div>
+          <div style="font-size:0.65em;color:var(--dim)">Motors: <span id="mission-motor" style="color:var(--green)">Idle</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card" style="flex:1">
+      <div class="card-h">📷 Live Preview</div>
+      <div class="card-b"><img class="stream" id="home-cam" src=""></div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="card-h">🗺 Navigation Preview</div>
+      <div class="card-b"><img class="stream" id="home-map" src=""></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PERCEPTION ===== -->
+<div class="page" id="page-perception">
+  <div class="g2">
+    <div class="card"><div class="card-h">📷 RGB Camera</div><div class="card-b"><img class="stream" id="perc-rgb" src=""></div></div>
+    <div class="card"><div class="card-h">🎨 Traversability Overlay</div><div class="card-b"><img class="stream" id="perc-trav" src=""></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-h">🔍 Depth Heatmap</div><div class="card-b"><img class="stream" id="perc-depth" src=""></div></div>
+    <div class="card">
+      <div class="card-h">📏 Obstacle Distance</div>
+      <div class="card-b">
+        <div class="obs">
+          <div class="ob safe" id="obl"><div class="ov" id="olv">--</div><div class="ol">Left</div></div>
+          <div class="ob safe" id="obf"><div class="ov" id="ofv">--</div><div class="ol">Front</div></div>
+          <div class="ob safe" id="obr"><div class="ov" id="orv">--</div><div class="ol">Right</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NAVIGATION ===== -->
+<div class="page" id="page-navigation">
+  <div class="g2">
+    <div class="card"><div class="card-h">🗺 Occupancy Grid Map</div><div class="card-b"><img class="stream" id="nav-map" src=""></div></div>
+    <div class="card">
+      <div class="card-h">📍 Localization</div>
+      <div class="card-b">
+        <div style="font-size:0.65em;display:flex;flex-direction:column;gap:6px">
+          <div>Position: <span id="nav-pose" style="color:var(--accent)">--</span></div>
+          <div>Orientation: <span id="nav-yaw" style="color:var(--accent)">--</span></div>
+          <div style="margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">SLAM Status</div>
+          <div>RTAB-Map: <span id="nav-slam" style="color:var(--warn)">Initializing</span></div>
+          <div>Loop Closure: <span id="nav-loop" style="color:var(--dim)">--</span></div>
+          <div>Features: <span id="nav-feat" style="color:var(--dim)">--</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ASSISTANT ===== -->
+<div class="page" id="page-assistant">
+  <div class="g13">
+    <div class="card">
+      <div class="card-h">🎛 Mode</div>
+      <div class="card-b">
+        <div class="modes" style="flex-direction:column;gap:6px">
+          <button class="mode-btn sel" data-mode="SILENT">🤫 Silent Assist</button>
+          <button class="mode-btn" data-mode="NAVIGATE">🧭 Navigate</button>
+          <button class="mode-btn" data-mode="EXPLORE">🔍 Explore</button>
+          <button class="mode-btn" data-mode="QUERY">💬 Q&A</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="card-h">💬 Conversation</div>
+      <div class="card-b"><div class="vlog" id="vlog"><div class="m s"><span class="mt">--:--</span>Guardian Assistant ready</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SAFETY ===== -->
+<div class="page" id="page-safety">
+  <div class="g2">
+    <div class="card">
+      <div class="card-h">⚠ Risk Assessment</div>
+      <div class="card-b">
+        <div class="g2">
+          <div class="scard safe" id="sr-level"><div class="sv">SAFE</div><div class="sl">Risk Level</div></div>
+          <div class="scard safe" id="sr-motor"><div class="sv">Idle</div><div class="sl">Motor State</div></div>
+        </div>
+        <div style="margin-top:12px;font-size:0.65em;color:var(--dim)">
+          Last Emergency: <span id="sr-last" style="color:var(--text)">None</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">🦾 Adaptive Safety Actuator</div>
+      <div class="card-b">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="flex:1;text-align:center;padding:12px;border-radius:8px;background:var(--card2)" id="sa-safe">
+            <div style="font-size:1.5em">🟢</div><div style="font-size:0.6em;margin-top:4px">Safe</div>
+            <div style="font-size:0.55em;color:var(--dim)">Free Walk</div>
+          </div>
+          <div style="color:var(--dim)">→</div>
+          <div style="flex:1;text-align:center;padding:12px;border-radius:8px;background:var(--card2);opacity:0.4" id="sa-warn">
+            <div style="font-size:1.5em">🟡</div><div style="font-size:0.6em;margin-top:4px">Warning</div>
+            <div style="font-size:0.55em;color:var(--dim)">Gentle Damp</div>
+          </div>
+          <div style="color:var(--dim)">→</div>
+          <div style="flex:1;text-align:center;padding:12px;border-radius:8px;background:var(--card2);opacity:0.4" id="sa-emer">
+            <div style="font-size:1.5em">🔴</div><div style="font-size:0.6em;margin-top:4px">Emergency</div>
+            <div style="font-size:0.55em;color:var(--dim)">Full Brake</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RUNTIME ===== -->
+<div class="page" id="page-runtime">
+  <div class="g3">
+    <div class="card"><div class="card-h">💻 CPU</div><div class="card-b"><div class="sv" id="rt-cpu" style="font-size:1.8em">--</div><div class="bar-w"><div class="bar-f cpu" id="rt-cpub" style="width:0%"></div></div></div></div>
+    <div class="card"><div class="card-h">🧠 NPU</div><div class="card-b"><div class="sv" id="rt-npu" style="font-size:1.8em">--</div><div class="bar-w"><div class="bar-f npu" id="rt-npub" style="width:0%"></div></div></div></div>
+    <div class="card"><div class="card-h">📊 RAM</div><div class="card-b"><div class="sv" id="rt-ram" style="font-size:1.8em">--</div><div class="bar-w"><div class="bar-f ram" id="rt-ramb" style="width:0%"></div></div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-h">📈 Performance Metrics</div>
+    <div class="card-b">
+      <table class="tbl">
+        <tr><th>Module</th><th>Status</th><th>FPS/Hz</th><th>Latency</th><th>Device</th></tr>
+        <tr><td>Camera</td><td id="pm-cam-s">●</td><td id="pm-cam-f">30</td><td id="pm-cam-l">--</td><td>USB3</td></tr>
+        <tr><td>ADE20K Seg</td><td id="pm-seg-s">●</td><td id="pm-seg-f">5</td><td id="pm-seg-l">--</td><td>CPU</td></tr>
+        <tr><td>Depth Obstacle</td><td id="pm-dep-s">●</td><td id="pm-dep-f">5</td><td id="pm-dep-l">--</td><td>CPU</td></tr>
+        <tr><td>ASR (Whisper)</td><td id="pm-asr-s">●</td><td id="pm-asr-f">--</td><td id="pm-asr-l">--</td><td>CPU</td></tr>
+        <tr><td>LLM (Ollama)</td><td id="pm-llm-s">●</td><td id="pm-llm-f">--</td><td id="pm-llm-l">--</td><td>CPU</td></tr>
+        <tr><td>TTS</td><td id="pm-tts-s">●</td><td id="pm-tts-f">--</td><td id="pm-tts-l">--</td><td>CPU/Edge</td></tr>
+        <tr><td>RTAB-Map SLAM</td><td id="pm-slam-s">●</td><td id="pm-slam-f">--</td><td id="pm-slam-l">--</td><td>CPU</td></tr>
+        <tr><td>Dialogue Mgr</td><td id="pm-dlg-s">●</td><td id="pm-dlg-f">5</td><td id="pm-dlg-l">--</td><td>CPU</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+<script>
+const IP='192.168.137.88',VP=8080,WP=9090,Q='&type=mjpeg&quality=60';
+const $=id=>document.getElementById(id),$$=sel=>document.querySelectorAll(sel);
+
+// Navigation
+$$('nav a').forEach(a=>a.onclick=e=>{
+  e.preventDefault();
+  $$('nav a').forEach(x=>x.classList.remove('active'));
+  a.classList.add('active');
+  const page=a.dataset.page;
+  $$('.page').forEach(p=>p.classList.remove('active'));
+  $(`page-${page}`).classList.add('active');
+  $('page-title').textContent=a.textContent.trim();
+});
+
+// Clock
+setInterval(()=>{$('clock').textContent=new Date().toLocaleTimeString()},1000);
+
+// Streams
+const streams={
+  'home-cam':'/camera/camera/color/image_raw',
+  'home-map':'/topdown/map',
+  'perc-rgb':'/camera/camera/color/image_raw',
+  'perc-trav':'/segmentation/overlay',
+  'perc-depth':'/depth/colorized',
+  'nav-map':'/topdown/map',
+};
+Object.entries(streams).forEach(([id,topic])=>{
+  const el=$(id);if(el)el.src=`http://${IP}:${VP}/stream?topic=${topic}${Q}`;
+});
+
+// Voice log
+const vlog=$('vlog');
+function logMsg(text,cls){
+  const t=new Date().toTimeString().slice(0,5);
+  const d=document.createElement('div');d.className='m '+cls;
+  d.innerHTML=`<span class="mt">${t}</span>${text}`;
+  vlog.appendChild(d);vlog.scrollTop=vlog.scrollHeight;
+}
+
+// Obstacle display
+function setObs(elV,elC,val){
+  const ve=$(elV),ce=$(elC);if(!ve||!ce)return;
+  if(val===null||val===undefined||val<0){ve.textContent='--';ce.className='ob safe'}
+  else if(val<0.8){ve.textContent=val.toFixed(1);ce.className='ob danger'}
+  else if(val<1.5){ve.textContent=val.toFixed(1);ce.className='ob caution'}
+  else{ve.textContent=val.toFixed(1);ce.className='ob safe'}
+}
+
+// ROS
+const ros=new ROSLIB.Ros({url:`ws://${IP}:${WP}`});
+ros.on('connection',()=>logMsg('Rosbridge connected','s'));
+ros.on('close',()=>logMsg('Connection lost','s'));
+
+new ROSLIB.Topic({ros,name:'/voice/text_in',messageType:'std_msgs/String'}).subscribe(m=>{
+  logMsg(m.data,'u');$('pm-asr-s').innerHTML='🟢';$('pm-asr-l').textContent='active';
+});
+new ROSLIB.Topic({ros,name:'/tts/say',messageType:'std_msgs/String'}).subscribe(m=>{
+  logMsg(m.data,'b');
+});
+new ROSLIB.Topic({ros,name:'/obstacle/front_distance',messageType:'std_msgs/Float32'}).subscribe(m=>{
+  const v=m.data;
+  setObs('ofv','obf',v);$('sv-front').textContent=v>0?v.toFixed(1):'--';
+  // Risk update
+  if(v>0&&v<0.5){$('sc-risk').className='scard danger';$('sc-risk').querySelector('.sv').textContent='DANGER'}
+  else if(v>0&&v<1.2){$('sc-risk').className='scard warn';$('sc-risk').querySelector('.sv').textContent='Caution'}
+  else{$('sc-risk').className='scard safe';$('sc-risk').querySelector('.sv').textContent='Safe'}
+});
+new ROSLIB.Topic({ros,name:'/obstacle/left_distance',messageType:'std_msgs/Float32'}).subscribe(m=>setObs('olv','obl',m.data));
+new ROSLIB.Topic({ros,name:'/obstacle/right_distance',messageType:'std_msgs/Float32'}).subscribe(m=>setObs('orv','obr',m.data));
+
+// System monitor
+new ROSLIB.Topic({ros,name:'/sys/cpu_percent',messageType:'std_msgs/Float32'}).subscribe(m=>{
+  const v=parseFloat(m.data)||0;$('rt-cpu').textContent=v.toFixed(0)+'%';$('rt-cpub').style.width=Math.min(100,v)+'%';
+});
+new ROSLIB.Topic({ros,name:'/sys/ram_percent',messageType:'std_msgs/Float32'}).subscribe(m=>{
+  const v=parseFloat(m.data)||0;$('rt-ram').textContent=v.toFixed(0)+'%';$('rt-ramb').style.width=Math.min(100,v)+'%';
+});
+new ROSLIB.Topic({ros,name:'/sys/npu_util',messageType:'std_msgs/Float32'}).subscribe(m=>{
+  const v=parseFloat(m.data)||0;$('rt-npu').textContent=v>0?v.toFixed(0)+'%':'N/A';$('rt-npub').style.width=v>0?Math.min(100,v)+'%':'0%';
+});
+
+// Mode buttons
+$$('.mode-btn').forEach(b=>b.onclick=()=>{$$('.mode-btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');$('mode-badge').textContent='● '+b.dataset.mode;$('sc-mode').querySelector('.sv').textContent=b.dataset.mode;});
+
+console.log('🦾 Guardian Stride Platform v1');
+</script>
+</body>
+</html>
