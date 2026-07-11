@@ -143,66 +143,78 @@ class MappingNode(Node):
         if self.rgb_img is None:
             return
         try:
-            # === TOP-DOWN MAP ===
-            tviz = np.zeros((MAP_SZ, MAP_SZ, 3), np.uint8)
-            tviz[:, :] = [15, 15, 25]
-            tviz[self.grid <= 2] = [35, 35, 50]
-            tviz[self.grid > 2] = [60, 40, 200]
-            # Path
-            for i, (pxx, pyy) in enumerate(self.path):
-                if i % 2 == 0:
-                    cv2.circle(tviz, (pxx, pyy), 2, (0, 255, 100), -1)
-            # Robot
-            cv2.circle(tviz, (MC, MC), 5, (0, 255, 200), -1)
-            # Goal
-            cv2.circle(tviz, self.goal, 5, (0, 200, 255), -1)
-            # Direction
-            pyaw = self.pose[2]
-            cv2.line(tviz, (MC, MC), (MC + int(20*math.cos(pyaw)), MC + int(20*math.sin(pyaw))), (255, 255, 0), 2)
-
-            tviz_big = cv2.resize(tviz, (400, 400), interpolation=cv2.INTER_NEAREST)
-            cv2.putText(tviz_big, f'10x10m 5cm/cell', (5, 390), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (150,150,150), 1)
-            cv2.putText(tviz_big, f'Obstacles: {int(np.sum(self.grid > 2))}', (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200,100,100), 1)
-
-            self.pub_map.publish(self.bridge.cv2_to_imgmsg(tviz_big, 'bgr8'))
-
-            # === TRAVERSABILITY OVERLAY ===
+            OUT_SZ = 600
+            scale = OUT_SZ / MAP_SZ
+            canvas = np.zeros((OUT_SZ, OUT_SZ, 3), np.uint8)
+            canvas[:, :] = [8, 10, 22]
+            for i in range(0, MAP_SZ, 40):
+                px = int(i * scale)
+                cv2.line(canvas, (px, 0), (px, OUT_SZ), (18, 20, 35), 1)
+                cv2.line(canvas, (0, px), (OUT_SZ, px), (18, 20, 35), 1)
+            for r_m in [2, 4, 6, 8]:
+                r = int(r_m / MAP_RES * scale)
+                cv2.circle(canvas, (OUT_SZ//2, OUT_SZ//2), r, (20, 24, 40), 1, cv2.LINE_AA)
+                cv2.putText(canvas, str(r_m)+"m", (OUT_SZ//2 + r - 15, OUT_SZ//2 + 12),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.3, (50, 55, 75), 1)
+            obs_norm = np.clip(self.grid.astype(np.float32) / 10.0, 0, 1)
+            ys, xs = np.where(obs_norm > 0.05)
+            for gy, gx in zip(ys, xs):
+                v = obs_norm[gy, gx]
+                px, py = int(gx * scale), int(gy * scale)
+                color = (int(40 + v * 60), int(20 + v * 30), int(180 + v * 60))
+                cv2.circle(canvas, (px, py), max(1, int(v * 4)), color, -1)
+            if self.path and len(self.path) > 1:
+                pts = np.array([[int(x * scale), int(y * scale)] for x, y in self.path], np.int32)
+                cv2.polylines(canvas, [pts], False, (0, 180, 80), 6, cv2.LINE_AA)
+                cv2.polylines(canvas, [pts], False, (0, 255, 120), 3, cv2.LINE_AA)
+            cx, cy = OUT_SZ // 2, OUT_SZ // 2
+            yaw = self.pose[2]
+            r = 12
+            tri = np.array([
+                [cx + int(r * math.cos(yaw)), cy + int(r * math.sin(yaw))],
+                [cx + int(r * math.cos(yaw + 2.5)), cy + int(r * math.sin(yaw + 2.5))],
+                [cx + int(r * math.cos(yaw - 2.5)), cy + int(r * math.sin(yaw - 2.5))],
+            ], np.int32)
+            cv2.fillPoly(canvas, [tri], (0, 255, 200))
+            cv2.polylines(canvas, [tri], True, (0, 200, 160), 1, cv2.LINE_AA)
+            gx, gy = int(self.goal[0] * scale), int(self.goal[1] * scale)
+            cv2.circle(canvas, (gx, gy), 7, (0, 180, 255), 2, cv2.LINE_AA)
+            cv2.circle(canvas, (gx, gy), 3, (0, 220, 255), -1)
+            cv2.line(canvas, (cx, cy), (cx + int(30 * math.cos(yaw)), cy + int(30 * math.sin(yaw))), (255, 255, 100), 2, cv2.LINE_AA)
+            cv2.rectangle(canvas, (0, 0), (OUT_SZ, 28), (12, 14, 30), -1)
+            cv2.line(canvas, (0, 28), (OUT_SZ, 28), (40, 50, 90), 1)
+            cv2.putText(canvas, "NAVIGATION MAP | 10x10m 5cm/cell", (10, 20),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 200, 240), 1)
+            cv2.putText(canvas, str(int(np.sum(self.grid > 2))) + " obstacles | " + str(len(self.path)) + " path pts",
+                       (OUT_SZ - 280, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (120, 140, 170), 1)
+            legend = [("Robot", (0, 255, 200)), ("Path", (0, 255, 120)), ("Obstacle", (180, 80, 255)), ("Goal", (0, 200, 255))]
+            lx, ly = OUT_SZ - 130, OUT_SZ - 80
+            cv2.rectangle(canvas, (lx-8, ly-8), (lx+120, ly+72), (15, 18, 35), -1)
+            cv2.rectangle(canvas, (lx-8, ly-8), (lx+120, ly+72), (30, 35, 60), 1)
+            for i, (label, color) in enumerate(legend):
+                yi = ly + i * 18
+                cv2.circle(canvas, (lx+6, yi+2), 4, color, -1)
+                cv2.putText(canvas, label, (lx+16, yi+6), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (180, 190, 210), 1)
+            self.pub_map.publish(self.bridge.cv2_to_imgmsg(canvas, "bgr8"))
             h, w = self.rgb_img.shape[:2]
             depth_m = cv2.resize(self.depth_img.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST) * 0.001
-
-            # Ground plane from bottom-center region
             bot = depth_m[int(h*0.75):, int(w*0.2):int(w*0.8)]
             bv = bot[(bot > 0.1) & (bot < 6.0)]
             gz = float(np.median(bv)) if len(bv) > 300 else 2.0
-
-            # Traversable: within 35cm of ground plane
             trav = np.abs(depth_m - gz) < 0.35
-            # Obstacle: significantly above ground or very close
             obst = (depth_m < gz - 0.2) & (np.abs(depth_m - gz) > 0.3)
             obst |= (depth_m < 0.5)
-            # Near threat: <1m
-            near = obst & (depth_m < 1.0) & (depth_m > 0.1)
-
             overlay = self.rgb_img.copy()
             gmask = np.zeros_like(overlay); gmask[trav] = [80, 210, 60]
             overlay = cv2.addWeighted(overlay, 0.6, gmask, 0.4, 0)
             rmask = np.zeros_like(overlay); rmask[obst] = [60, 50, 240]
             overlay = cv2.addWeighted(overlay, 1.0, rmask, 0.35, 0)
-            ymask = np.zeros_like(overlay); ymask[near] = [0, 230, 250]
-            overlay = cv2.addWeighted(overlay, 1.0, ymask, 0.5, 0)
-
-            cv2.putText(overlay, 'GREEN=Walkable RED=Obstacle YELLOW=<1m', (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255,255,255), 1)
-            cv2.putText(overlay, f'Ground: {gz:.1f}m  Walkable: {trav.sum()/trav.size*100:.0f}%', (10, h-10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (60,210,80), 2)
-            self.pub_overlay.publish(self.bridge.cv2_to_imgmsg(overlay, 'bgr8'))
-
-            # Nearest obstacle
+            self.pub_overlay.publish(self.bridge.cv2_to_imgmsg(overlay, "bgr8"))
             if obst.any():
                 od = depth_m[obst]; od = od[od > 0.1]
                 self.pub_obst.publish(Float32(data=float(np.min(od)) if len(od) > 0 else -1.0))
-
         except Exception as e:
             self.get_logger().error(str(e)[:200])
-
 def main():
     rclpy.init()
     rclpy.spin(MappingNode())
