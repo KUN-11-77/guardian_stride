@@ -73,7 +73,6 @@ body {
 .bf.cpu { background:linear-gradient(90deg,var(--accent),var(--accent2)); }
 .bf.ram { background:linear-gradient(90deg,var(--green),#22c55e); }
 .bf.npu { background:linear-gradient(90deg,#f59e0b,#f97316); }
-.bf.gpu { background:linear-gradient(90deg,var(--accent2),#c084fc); }
 
 .sr { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:6px; }
 .st { text-align:center; padding:6px; border-radius:6px; background:var(--card2); }
@@ -94,18 +93,11 @@ body {
 <div class="main">
   <div class="r1">
     <div class="c"><div class="ch">📷 RGB 相机<span class="tag">Realsense D435i</span></div><div class="cb"><div class="ph" id="p1"><div class="sp"></div>等待...</div><img id="i1" onload="S('p1');sd('d1','on')" onerror="sd('d1','off')"></div></div>
-    <div class="c"><div class="ch">🦿 可通行检测<span class="tag">深度RANSAC</span></div><div class="cb"><div class="ph" id="p2"><div class="sp"></div>等待...</div><img id="i2" onload="S('p2');sd('d2','on')" onerror="sd('d2','off')"></div></div>
+    <div class="c"><div class="ch">🎨 ADE20K 语义分割<span class="tag">150类 可通行标注</span></div><div class="cb"><div class="ph" id="p2"><div class="sp"></div>等待...</div><img id="i2" onload="S('p2');sd('d2','on')" onerror="sd('d2','off')"></div></div>
   </div>
   <div class="r2">
     <div class="c"><div class="ch">🔍 深度图<span class="tag">TURBO色映射</span></div><div class="cb"><div class="ph" id="p3"><div class="sp"></div>等待...</div><img id="i3" onload="S('p3');sd('d3','on')" onerror="sd('d3','off')"></div></div>
-    <div class="c"><div class="ch">⚡ 电机驱动状态<span class="tag">CAN 0x200 双电机同步</span></div><div class="cb gauge-panel">
-      <div class="gauge-title">左右电机扭矩 · 绳索驱动</div>
-      <div class="gauge-row">
-        <div class="gauge"><div class="gl">⬅ 左电机</div><div class="bar-outer"><div class="bar-fill release" id="bar-l" style="height:50%"></div></div><div class="gv" id="gv-l">0.0</div><div class="gs">扭矩 N·m</div></div>
-        <div class="gauge"><div class="gl">➡ 右电机</div><div class="bar-outer"><div class="bar-fill release" id="bar-r" style="height:50%"></div></div><div class="gv" id="gv-r">0.0</div><div class="gs">扭矩 N·m</div></div>
-      </div>
-      <div id="motor-status" style="margin-top:8px;font-size:0.75em;color:var(--accent);">CAN 已就绪 · 等待上电</div>
-    </div></div>
+    <div class="c"><div class="ch">🗺️ 俯视导航地图<span class="tag">10m×10m A*路径</span></div><div class="cb"><div class="ph" id="p4"><div class="sp"></div>等待...</div><img id="i4" onload="S('p4');sd('d4','on')" onerror="sd('d4','off')"></div></div>
   </div>
 </div>
 
@@ -118,7 +110,6 @@ body {
       <div class="sb"><div class="sv" id="cv">--</div><div class="sl">CPU</div><div class="bw"><div class="bf cpu" id="cb" style="width:0%"></div></div></div>
       <div class="sb"><div class="sv" id="rv">--</div><div class="sl">RAM</div><div class="bw"><div class="bf ram" id="rb" style="width:0%"></div></div></div>
       <div class="sb"><div class="sv" id="nv">--</div><div class="sl">NPU</div><div class="bw"><div class="bf npu" id="nb" style="width:0%"></div></div></div>
-      <div class="sb"><div class="sv" id="gv">--</div><div class="sl">iGPU</div><div class="bw"><div class="bf gpu" id="gb" style="width:0%"></div></div></div>
     </div>
     <div class="sr">
       <div class="st"><div class="sval" id="rg">-- GB</div><div class="slbl">已用 / 7.5GB</div></div>
@@ -145,6 +136,7 @@ body {
       <div class="sd"><span class="sdot wait" id="d1"></span>相机</div>
       <div class="sd"><span class="sdot wait" id="d2"></span>可通行</div>
       <div class="sd"><span class="sdot wait" id="d3"></span>深度</div>
+      <div class="sd"><span class="sdot wait" id="d4"></span>NPU</div>
       <div class="sd"><span class="sdot wait" id="da"></span>ASR</div>
       <div class="sd"><span class="sdot wait" id="db"></span>桥接</div>
     </div>
@@ -161,6 +153,7 @@ const $=id=>document.getElementById(id);
 $('i1').src=`http://${IP}:${VP}/stream?topic=/camera/camera/color/image_raw${Q}`;
 $('i2').src=`http://${IP}:${VP}/stream?topic=/segmentation/overlay${Q}`;
 $('i3').src=`http://${IP}:${VP}/stream?topic=/depth/colorized${Q}`;
+$('i4').src=`http://${IP}:${VP}/stream?topic=/topdown/map${Q}`;
 
 function S(id){const e=$(id);if(e)e.style.display='none';}
 function sd(id,c){const e=$(id);if(e)e.className='sdot '+c;}
@@ -188,18 +181,6 @@ function O(elV,elC,v){
   ve.textContent=disp;ce.className='ob '+c;
 }
 
-// Motor gauge
-function updateMotor(torque){
-  const absTorque = Math.abs(torque);
-  const pct = absTorque * 100;
-  const barL = $('bar-l'), barR = $('bar-r');
-  if(barL){ barL.style.height = pct + '%'; barL.className = 'bar-fill ' + (torque < 0 ? 'tighten' : 'release'); }
-  if(barR){ barR.style.height = pct + '%'; barR.className = 'bar-fill ' + (torque < 0 ? 'tighten' : 'release'); }
-  T('gv-l', torque.toFixed(2));
-  T('gv-r', torque.toFixed(2));
-  T('motor-status', torque < -0.3 ? '⚠ STOP · 双电机收紧' : torque < 0 ? '⚠ 减速 · 绳索收紧' : '✅ 行走 · 绳索放松');
-}
-
 // ROS
 const ros=new ROSLIB.Ros({url:`ws://${IP}:${WP}`});
 ros.on('connection',()=>{sd('db','on');A('Rosbridge 已连接','s');});
@@ -217,7 +198,6 @@ new ROSLIB.Topic({ros,name:'/sys/cpu_percent',messageType:'std_msgs/Float32'}).s
 new ROSLIB.Topic({ros,name:'/sys/ram_percent',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;U('rv','rb',v,'%');});
 new ROSLIB.Topic({ros,name:'/sys/ram_used_gb',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;T('rg',v.toFixed(1)+' / 7.5 GB');});
 new ROSLIB.Topic({ros,name:'/sys/npu_util',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;T('nv',v<0?'N/A':v.toFixed(0)+'%');U('nb',v<0?0:v,'');});
-new ROSLIB.Topic({ros,name:'/sys/igpu_util',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;T('gv',v<0?'N/A':v.toFixed(0)+'%');U('gb',v<0?0:v,'');});
 new ROSLIB.Topic({ros,name:'/sys/temp_celsius',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;T('tv',v.toFixed(0)+' °C');});
 
 console.log('🦾 Guardian Dashboard v6 · 电机扭矩 + 资源监控');
