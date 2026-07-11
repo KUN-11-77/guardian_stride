@@ -97,7 +97,7 @@ body {
   </div>
   <div class="r2">
     <div class="c"><div class="ch">🔍 深度图<span class="tag">TURBO色映射</span></div><div class="cb"><div class="ph" id="p3"><div class="sp"></div>等待...</div><img id="i3" onload="S('p3');sd('d3','on')" onerror="sd('d3','off')"></div></div>
-    <div class="c"><div class="ch">🗺️ 俯视导航地图<span class="tag">10m×10m A*路径</span></div><div class="cb"><div class="ph" id="p4"><div class="sp"></div>等待...</div><img id="i4" onload="S('p4');sd('d4','on')" onerror="sd('d4','off')"></div></div>
+    <div class="c"><div class="ch">🗺️ RTAB-Map 实时SLAM地图<span class="tag">真实建图 OccupancyGrid</span></div><div class="cb"><div class="ph" id="p4"><div class="sp"></div>等待SLAM...</div><img id="i4" onload="S('p4');sd('d4','on')" onerror="sd('d4','off')"></div></div>
   </div>
 </div>
 
@@ -153,7 +153,7 @@ const $=id=>document.getElementById(id);
 $('i1').src=`http://${IP}:${VP}/stream?topic=/camera/camera/color/image_raw${Q}`;
 $('i2').src=`http://${IP}:${VP}/stream?topic=/segmentation/overlay${Q}`;
 $('i3').src=`http://${IP}:${VP}/stream?topic=/depth/colorized${Q}`;
-$('i4').src=`http://${IP}:${VP}/stream?topic=/topdown/map${Q}`;
+$('i4').src=`http://${IP}:${VP}/stream?topic=/map_viz${Q}`;
 
 function S(id){const e=$(id);if(e)e.style.display='none';}
 function sd(id,c){const e=$(id);if(e)e.className='sdot '+c;}
