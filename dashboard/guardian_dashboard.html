@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Guardian Stride · DK-2500 盲人助行</title>
+<style>
+:root {
+  --bg:#030314; --card:rgba(10,10,38,0.92); --card2:rgba(16,16,50,0.8);
+  --border:rgba(80,160,255,0.12); --accent:#38bdf8; --accent2:#a78bfa;
+  --green:#34d399; --warn:#fbbf24; --red:#f87171; --text:#cbd5e1; --dim:#64748b;
+  --radius:12px; --gap:8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Segoe UI','Microsoft YaHei',sans-serif;
+  background:var(--bg); color:var(--text); height:100vh; overflow:hidden;
+  background-image:radial-gradient(ellipse at 30% 20%,rgba(56,189,248,0.04) 0%,transparent 50%);
+}
+.app { display:flex; height:100vh; padding:var(--gap); gap:var(--gap); }
+.main { flex:1; display:flex; flex-direction:column; gap:var(--gap); min-width:0; }
+.sidebar { width:360px; min-width:360px; display:flex; flex-direction:column; gap:var(--gap); }
+
+.c { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column; backdrop-filter:blur(16px); }
+.ch { padding:7px 14px; font-size:0.73em; font-weight:600; background:rgba(255,255,255,0.015); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; gap:6px; }
+.ch .tag { font-size:0.68em; padding:2px 8px; border-radius:8px; background:rgba(56,189,248,0.1); color:var(--accent); margin-left:auto; }
+.cb { flex:1; position:relative; min-height:0; background:#000; }
+.cb img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+.cb .ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--dim); gap:6px; font-size:0.75em; }
+.cb .ph .sp { width:24px; height:24px; border:2px solid rgba(255,255,255,0.08); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+.r1 { display:flex; gap:var(--gap); flex:5; min-height:0; }
+.r1 .c { flex:1; }
+.r2 { display:flex; gap:var(--gap); flex:3; min-height:0; }
+.r2 .c { flex:1; }
+
+/* Motor gauges */
+.gauge-panel { background:var(--card2); display:flex; align-items:center; justify-content:center; flex-direction:column; padding:20px; }
+.gauge-title { font-size:0.8em; font-weight:600; color:var(--accent); margin-bottom:10px; }
+.gauge-row { display:flex; gap:30px; align-items:flex-end; height:180px; }
+.gauge { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.gauge .gl { font-size:0.65em; color:var(--dim); }
+.gauge .bar-outer { width:50px; height:160px; background:rgba(255,255,255,0.04); border-radius:8px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.1); }
+.gauge .bar-fill { position:absolute; bottom:0; left:0; right:0; transition:height .3s, background .3s; border-radius:6px; }
+.gauge .bar-fill.release { background:linear-gradient(to top, #34d399, #22c55e); }
+.gauge .bar-fill.tighten { background:linear-gradient(to top, #f87171, #ef4444); }
+.gauge .gv { font-size:0.9em; font-weight:700; }
+.gauge .gs { font-size:0.6em; color:var(--dim); }
+
+/* Obstacle */
+.obs { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; padding:8px; }
+.ob { text-align:center; padding:8px 4px; border-radius:8px; background:var(--card2); border:1px solid transparent; transition:all .3s; }
+.ob .oi { font-size:1.2em; } .ob .ov { font-size:1.2em; font-weight:700; margin:2px 0; } .ob .ol { font-size:0.58em; color:var(--dim); }
+.ob.s .ov { color:var(--green); } .ob.w { border-color:rgba(251,191,36,0.4); } .ob.w .ov { color:var(--warn); } .ob.d { border-color:rgba(248,113,113,0.5); animation:dp .8s infinite; } .ob.d .ov { color:var(--red); }
+@keyframes dp { 0%,100%{box-shadow:0 0 4px rgba(248,113,113,0.1)} 50%{box-shadow:0 0 20px rgba(248,113,113,0.3)} }
+
+/* Voice */
+.vl { flex:1; overflow-y:auto; padding:6px 10px; display:flex; flex-direction:column; gap:2px; }
+.m { padding:5px 8px; border-radius:6px; font-size:0.73em; line-height:1.4; animation:slide .25s; }
+.m.u { background:rgba(52,211,153,0.06); border-left:3px solid var(--green); }
+.m.b { background:rgba(56,189,248,0.05); border-left:3px solid var(--accent); }
+.m.s { background:rgba(100,116,139,0.04); border-left:3px solid var(--dim); font-size:0.68em; text-align:center; }
+.m .mt { font-size:0.62em; color:var(--dim); display:block; }
+@keyframes slide { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
+
+/* System resources */
+.sys { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; padding:8px; }
+.sb { text-align:center; padding:8px 4px; border-radius:6px; background:var(--card2); }
+.sb .sv { font-size:1.05em; font-weight:700; }
+.sb .sl { font-size:0.58em; color:var(--dim); margin-top:2px; }
+.bw { height:5px; background:rgba(255,255,255,0.06); border-radius:3px; margin-top:4px; overflow:hidden; }
+.bf { height:100%; border-radius:3px; transition:width .5s; }
+.bf.cpu { background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+.bf.ram { background:linear-gradient(90deg,var(--green),#22c55e); }
+.bf.npu { background:linear-gradient(90deg,#f59e0b,#f97316); }
+.bf.gpu { background:linear-gradient(90deg,var(--accent2),#c084fc); }
+
+.sr { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:6px; }
+.st { text-align:center; padding:6px; border-radius:6px; background:var(--card2); }
+.st .sval { font-size:1em; font-weight:600; color:var(--accent2); }
+.st .slbl { font-size:0.58em; color:var(--dim); }
+
+.sbar { display:flex; gap:10px; padding:6px 10px; flex-wrap:wrap; }
+.sd { display:flex; align-items:center; gap:4px; font-size:0.62em; color:var(--dim); }
+.sdot { width:5px; height:5px; border-radius:50%; }
+.sdot.on { background:var(--green); box-shadow:0 0 5px var(--green); }
+.sdot.off { background:var(--red); }
+.sdot.wait { background:var(--warn); animation:blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+</style>
+</head>
+<body><div class="app">
+
+<div class="main">
+  <div class="r1">
+    <div class="c"><div class="ch">📷 RGB 相机<span class="tag">Realsense D435i</span></div><div class="cb"><div class="ph" id="p1"><div class="sp"></div>等待...</div><img id="i1" onload="S('p1');sd('d1','on')" onerror="sd('d1','off')"></div></div>
+    <div class="c"><div class="ch">🦿 可通行检测<span class="tag">深度RANSAC</span></div><div class="cb"><div class="ph" id="p2"><div class="sp"></div>等待...</div><img id="i2" onload="S('p2');sd('d2','on')" onerror="sd('d2','off')"></div></div>
+  </div>
+  <div class="r2">
+    <div class="c"><div class="ch">🔍 深度图<span class="tag">TURBO色映射</span></div><div class="cb"><div class="ph" id="p3"><div class="sp"></div>等待...</div><img id="i3" onload="S('p3');sd('d3','on')" onerror="sd('d3','off')"></div></div>
+    <div class="c"><div class="ch">⚡ 电机驱动状态<span class="tag">CAN 0x200 双电机同步</span></div><div class="cb gauge-panel">
+      <div class="gauge-title">左右电机扭矩 · 绳索驱动</div>
+      <div class="gauge-row">
+        <div class="gauge"><div class="gl">⬅ 左电机</div><div class="bar-outer"><div class="bar-fill release" id="bar-l" style="height:50%"></div></div><div class="gv" id="gv-l">0.0</div><div class="gs">扭矩 N·m</div></div>
+        <div class="gauge"><div class="gl">➡ 右电机</div><div class="bar-outer"><div class="bar-fill release" id="bar-r" style="height:50%"></div></div><div class="gv" id="gv-r">0.0</div><div class="gs">扭矩 N·m</div></div>
+      </div>
+      <div id="motor-status" style="margin-top:8px;font-size:0.75em;color:var(--accent);">CAN 已就绪 · 等待上电</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="sidebar">
+  <div class="c" style="flex:0 0 auto;"><div style="padding:10px 14px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.05);"><div style="font-size:1.1em;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">🦾 Guardian Stride</div><div style="font-size:0.6em;color:var(--dim);letter-spacing:1px;">DK-2500 · 盲人助行外骨骼</div></div></div>
+
+  <div class="c" style="flex:0 0 auto;">
+    <div class="ch">💻 DK-2500 计算资源<span class="tag">实时</span></div>
+    <div class="sys">
+      <div class="sb"><div class="sv" id="cv">--</div><div class="sl">CPU</div><div class="bw"><div class="bf cpu" id="cb" style="width:0%"></div></div></div>
+      <div class="sb"><div class="sv" id="rv">--</div><div class="sl">RAM</div><div class="bw"><div class="bf ram" id="rb" style="width:0%"></div></div></div>
+      <div class="sb"><div class="sv" id="nv">--</div><div class="sl">NPU</div><div class="bw"><div class="bf npu" id="nb" style="width:0%"></div></div></div>
+      <div class="sb"><div class="sv" id="gv">--</div><div class="sl">iGPU</div><div class="bw"><div class="bf gpu" id="gb" style="width:0%"></div></div></div>
+    </div>
+    <div class="sr">
+      <div class="st"><div class="sval" id="rg">-- GB</div><div class="slbl">已用 / 7.5GB</div></div>
+      <div class="st"><div class="sval" id="tv">-- °C</div><div class="slbl">CPU温度</div></div>
+    </div>
+  </div>
+
+  <div class="c" style="flex:0 0 auto;">
+    <div class="ch">📏 障碍物距离 (米)</div>
+    <div class="obs">
+      <div class="ob s" id="obl"><div class="oi">👈</div><div class="ov" id="olv">--</div><div class="ol">左侧</div></div>
+      <div class="ob s" id="obf"><div class="oi">⬆️</div><div class="ov" id="ofv">--</div><div class="ol">前方</div></div>
+      <div class="ob s" id="obr"><div class="oi">👉</div><div class="ov" id="orv">--</div><div class="ol">右侧</div></div>
+    </div>
+  </div>
+
+  <div class="c" style="flex:1;min-height:0;">
+    <div class="ch">🎤 语音交互<span id="vs" style="font-size:0.7em;color:var(--green);margin-left:auto;">就绪</span></div>
+    <div class="vl" id="vl"><div class="m s"><span class="mt">--:--</span>等待语音输入...</div></div>
+  </div>
+
+  <div class="c" style="flex:0 0 auto;">
+    <div class="sbar">
+      <div class="sd"><span class="sdot wait" id="d1"></span>相机</div>
+      <div class="sd"><span class="sdot wait" id="d2"></span>可通行</div>
+      <div class="sd"><span class="sdot wait" id="d3"></span>深度</div>
+      <div class="sd"><span class="sdot wait" id="da"></span>ASR</div>
+      <div class="sd"><span class="sdot wait" id="db"></span>桥接</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+<script>
+const IP='192.168.137.88',VP=8080,WP=9090,Q='&type=mjpeg&quality=70';
+const $=id=>document.getElementById(id);
+
+// Streams
+$('i1').src=`http://${IP}:${VP}/stream?topic=/camera/camera/color/image_raw${Q}`;
+$('i2').src=`http://${IP}:${VP}/stream?topic=/segmentation/overlay${Q}`;
+$('i3').src=`http://${IP}:${VP}/stream?topic=/depth/colorized${Q}`;
+
+function S(id){const e=$(id);if(e)e.style.display='none';}
+function sd(id,c){const e=$(id);if(e)e.className='sdot '+c;}
+function T(id,t){const e=$(id);if(e)e.textContent=t;}
+
+// Resource bars - FIXED: properly set width from numeric float value
+function U(idV,idB,val,suffix){
+  T(idV, val.toFixed(0) + suffix);
+  const b = $(idB);
+  if(b) b.style.width = Math.max(0, Math.min(100, val)) + '%';
+}
+
+const VL=$('vl');
+function A(m,c){const t=new Date().toTimeString().slice(0,5);const d=document.createElement('div');d.className='m '+c;d.innerHTML='<span class="mt">'+t+'</span>'+m;VL.appendChild(d);VL.scrollTop=VL.scrollHeight;}
+
+function O(elV,elC,v){
+  const ve=$(elV),ce=$(elC);
+  if(!ve||!ce)return;
+  let c,disp;
+  if(v===null||v===undefined){disp='--';c='s';}
+  else if(v<0){disp='∞';c='s';}
+  else if(v<0.8){disp=v.toFixed(1);c='d';}
+  else if(v<1.5){disp=v.toFixed(1);c='w';}
+  else{disp=v.toFixed(1);c='s';}
+  ve.textContent=disp;ce.className='ob '+c;
+}
+
+// Motor gauge
+function updateMotor(torque){
+  const absTorque = Math.abs(torque);
+  const pct = absTorque * 100;
+  const barL = $('bar-l'), barR = $('bar-r');
+  if(barL){ barL.style.height = pct + '%'; barL.className = 'bar-fill ' + (torque < 0 ? 'tighten' : 'release'); }
+  if(barR){ barR.style.height = pct + '%'; barR.className = 'bar-fill ' + (torque < 0 ? 'tighten' : 'release'); }
+  T('gv-l', torque.toFixed(2));
+  T('gv-r', torque.toFixed(2));
+  T('motor-status', torque < -0.3 ? '⚠ STOP · 双电机收紧' : torque < 0 ? '⚠ 减速 · 绳索收紧' : '✅ 行走 · 绳索放松');
+}
+
+// ROS
+const ros=new ROSLIB.Ros({url:`ws://${IP}:${WP}`});
+ros.on('connection',()=>{sd('db','on');A('Rosbridge 已连接','s');});
+ros.on('close',()=>{sd('db','off');A('连接断开','s');});
+ros.on('error',()=>sd('db','off'));
+
+new ROSLIB.Topic({ros,name:'/voice/text_in',messageType:'std_msgs/String'}).subscribe(m=>{A(m.data,'u');sd('da','on');T('vs','聆听中');});
+new ROSLIB.Topic({ros,name:'/tts/say',messageType:'std_msgs/String'}).subscribe(m=>{A(m.data,'b');T('vs','播报中');setTimeout(()=>T('vs','就绪'),3500);});
+new ROSLIB.Topic({ros,name:'/obstacle/front_distance',messageType:'std_msgs/Float32'}).subscribe(m=>O('ofv','obf',m.data));
+new ROSLIB.Topic({ros,name:'/obstacle/left_distance',messageType:'std_msgs/Float32'}).subscribe(m=>O('olv','obl',m.data));
+new ROSLIB.Topic({ros,name:'/obstacle/right_distance',messageType:'std_msgs/Float32'}).subscribe(m=>O('orv','obr',m.data));
+
+// System monitor - FIXED: handle Float32 data properly
+new ROSLIB.Topic({ros,name:'/sys/cpu_percent',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;U('cv','cb',v,'%');});
+new ROSLIB.Topic({ros,name:'/sys/ram_percent',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;U('rv','rb',v,'%');});
+new ROSLIB.Topic({ros,name:'/sys/ram_used_gb',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;T('rg',v.toFixed(1)+' / 7.5 GB');});
+new ROSLIB.Topic({ros,name:'/sys/npu_util',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;T('nv',v<0?'N/A':v.toFixed(0)+'%');U('nb',v<0?0:v,'');});
+new ROSLIB.Topic({ros,name:'/sys/igpu_util',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;T('gv',v<0?'N/A':v.toFixed(0)+'%');U('gb',v<0?0:v,'');});
+new ROSLIB.Topic({ros,name:'/sys/temp_celsius',messageType:'std_msgs/Float32'}).subscribe(m=>{const v=parseFloat(m.data)||0;T('tv',v.toFixed(0)+' °C');});
+
+console.log('🦾 Guardian Dashboard v6 · 电机扭矩 + 资源监控');
+</script>
+</body>
+</html>
