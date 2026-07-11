@@ -1,0 +1,32 @@
+# guardian_voice/config/voice_params.yaml
+
+voice_asr_node:
+  ros__parameters:
+    mic_device_name: "BOYA"
+    sample_rate: 16000
+    frame_duration_ms: 30
+    silence_threshold_ms: 700
+    max_utterance_s: 8.0
+    energy_threshold: 0.012
+    asr_model: "Systran/faster-whisper-tiny"
+    asr_language: "zh"
+    asr_device: "cpu"
+    asr_compute_type: "int8"
+
+depth_obstacle_node:
+  ros__parameters:
+    depth_topic: "/camera/camera/depth/image_rect_raw"
+    roi_half: 12
+    publish_rate_hz: 5.0
+    obstacle_threshold_m: 1.5
+
+voice_assistant_node:
+  ros__parameters:
+    obstacle_threshold_m: 1.5
+
+tts_node:
+  ros__parameters:
+    voice: "zh-CN-XiaoxiaoNeural"
+    rate: "+0%"
+    volume: "+0%"
+    save_dir: ""

@@ -1,0 +1,6 @@
+# gs_voice/config/voice_params.yaml
+voice_node:
+  ros__parameters:
+    wake_word: "小助手"
+    asr_model_path: "/models/whisper-tiny-openvino"
+    enable_tts: true

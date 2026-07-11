@@ -63,11 +63,6 @@ tmux new-window -t $SESSION -n sysmon
 tmux send-keys -t $SESSION:sysmon "bash -c '$S && ros2 run guardian_voice sys_monitor_node'" Enter
 echo "[9/10] System monitor"
 
-# 10. Mapping + Traversability (replaces semantic segmentation)
-tmux new-window -t $SESSION -n mapping
-tmux send-keys -t $SESSION:mapping "bash -c '$S && ros2 run guardian_voice mapping_node'" Enter
-echo "[10/10] Mapping + traversability"
-
 echo "=== ALL LAUNCHED ==="
 sleep 6
 tmux list-windows -t $SESSION
